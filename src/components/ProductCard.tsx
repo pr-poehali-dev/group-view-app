@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import type { Product, Reaction } from "@/data/products";
 
@@ -13,6 +13,8 @@ export default function ProductCard({ product, index }: Props) {
   const [showReactions, setShowReactions] = useState(false);
   const [activePhoto, setActivePhoto] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
+  const [lightboxPhoto, setLightboxPhoto] = useState(0);
 
   const toggleReaction = (idx: number) => {
     setReactions((prev) =>
@@ -24,6 +26,22 @@ export default function ProductCard({ product, index }: Props) {
     );
     setShowReactions(false);
   };
+
+  const openLightbox = (i: number) => { setLightboxPhoto(i); setLightbox(true); };
+  const closeLightbox = () => setLightbox(false);
+  const lbPrev = () => setLightboxPhoto((p) => (p - 1 + product.images.length) % product.images.length);
+  const lbNext = () => setLightboxPhoto((p) => (p + 1) % product.images.length);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") lbPrev();
+      if (e.key === "ArrowRight") lbNext();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox, product.images.length]);
 
   const prevPhoto = () => setActivePhoto((p) => (p - 1 + product.images.length) % product.images.length);
   const nextPhoto = () => setActivePhoto((p) => (p + 1) % product.images.length);
@@ -83,6 +101,14 @@ export default function ProductCard({ product, index }: Props) {
           <Icon name="Heart" size={16} className={saved ? "fill-pink-400 text-pink-400" : "text-white/70"} />
         </button>
 
+        {/* Open fullscreen button */}
+        <button
+          onClick={() => openLightbox(activePhoto)}
+          className="absolute bottom-3 right-3 w-8 h-8 rounded-full glass flex items-center justify-center text-white/70 hover:text-white transition-all"
+        >
+          <Icon name="Expand" size={14} />
+        </button>
+
         {/* Dot indicators */}
         {product.images.length > 1 && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
@@ -98,6 +124,79 @@ export default function ProductCard({ product, index }: Props) {
           </div>
         )}
       </div>
+
+      {/* ── LIGHTBOX ── */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(16px)" }}
+          onClick={closeLightbox}
+        >
+          {/* Close */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-5 right-5 w-10 h-10 rounded-full glass flex items-center justify-center text-white/70 hover:text-white transition-all z-10"
+          >
+            <Icon name="X" size={18} />
+          </button>
+
+          {/* Counter */}
+          <div className="absolute top-5 left-5 glass rounded-full px-3 py-1.5 text-xs text-white/70 font-semibold">
+            {lightboxPhoto + 1} / {product.images.length}
+          </div>
+
+          {/* Image */}
+          <div
+            className="relative max-w-[90vw] max-h-[80vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              key={lightboxPhoto}
+              src={product.images[lightboxPhoto]}
+              alt={`${product.name} фото ${lightboxPhoto + 1}`}
+              className="max-w-[90vw] max-h-[80vh] object-contain rounded-2xl"
+              style={{ animation: "lbFadeIn 0.25s ease" }}
+            />
+
+            {product.images.length > 1 && (
+              <>
+                <button
+                  onClick={lbPrev}
+                  className="absolute -left-14 w-10 h-10 rounded-full glass flex items-center justify-center text-white hover:bg-white/20 transition-all"
+                >
+                  <Icon name="ChevronLeft" size={20} />
+                </button>
+                <button
+                  onClick={lbNext}
+                  className="absolute -right-14 w-10 h-10 rounded-full glass flex items-center justify-center text-white hover:bg-white/20 transition-all"
+                >
+                  <Icon name="ChevronRight" size={20} />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Thumbnail strip */}
+          {product.images.length > 1 && (
+            <div
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {product.images.map((src, i) => (
+                <button
+                  key={i}
+                  onClick={() => setLightboxPhoto(i)}
+                  className={`w-12 h-12 rounded-xl overflow-hidden transition-all ${
+                    i === lightboxPhoto ? "ring-2 ring-violet-500 scale-110" : "opacity-40 hover:opacity-70"
+                  }`}
+                >
+                  <img src={src} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Thumbnail strip */}
       {product.images.length > 1 && (
