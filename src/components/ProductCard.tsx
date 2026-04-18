@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import type { Product, Reaction } from "@/data/products";
+import ChatDrawer from "@/components/ChatDrawer";
 
 interface Props {
   product: Product;
@@ -15,6 +16,7 @@ export default function ProductCard({ product, index }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [lightbox, setLightbox] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState(0);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const toggleReaction = (idx: number) => {
     setReactions((prev) =>
@@ -273,7 +275,7 @@ export default function ProductCard({ product, index }: Props) {
         <div className="border-t border-white/5" />
 
         {/* Price + Buy */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div>
             <p className="font-display font-black text-2xl bg-gradient-to-r from-violet-400 to-pink-400 bg-clip-text text-transparent leading-none">
               {product.price}
@@ -282,9 +284,18 @@ export default function ProductCard({ product, index }: Props) {
               <p className="text-muted-foreground text-xs line-through mt-0.5">{product.oldPrice}</p>
             )}
           </div>
-          <button className="bg-gradient-to-r from-violet-500 to-pink-500 text-white text-sm font-semibold px-5 py-2.5 rounded-2xl hover:opacity-90 transition-opacity shadow-lg shadow-violet-500/20">
-            В корзину
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setChatOpen(true)}
+              className="flex items-center gap-1.5 glass border border-violet-500/30 text-violet-400 text-sm font-semibold px-3.5 py-2.5 rounded-2xl hover:bg-violet-500/10 transition-all"
+            >
+              <Icon name="MessageCircle" size={15} />
+              Написать
+            </button>
+            <button className="bg-gradient-to-r from-violet-500 to-pink-500 text-white text-sm font-semibold px-4 py-2.5 rounded-2xl hover:opacity-90 transition-opacity shadow-lg shadow-violet-500/20">
+              В корзину
+            </button>
+          </div>
         </div>
 
         {/* Reactions */}
@@ -338,6 +349,12 @@ export default function ProductCard({ product, index }: Props) {
           </button>
         </div>
       </div>
+
+      <ChatDrawer
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        product={product}
+      />
     </article>
   );
 }
