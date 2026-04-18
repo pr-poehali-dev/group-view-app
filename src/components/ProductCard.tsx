@@ -11,6 +11,8 @@ export default function ProductCard({ product, index }: Props) {
   const [reactions, setReactions] = useState<Reaction[]>(product.reactions);
   const [saved, setSaved] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
+  const [activePhoto, setActivePhoto] = useState(0);
+  const [expanded, setExpanded] = useState(false);
 
   const toggleReaction = (idx: number) => {
     setReactions((prev) =>
@@ -23,22 +25,48 @@ export default function ProductCard({ product, index }: Props) {
     setShowReactions(false);
   };
 
-  const totalReactions = reactions.reduce((s, r) => s + r.count, 0);
-  const activeReaction = reactions.find((r) => r.active);
+  const prevPhoto = () => setActivePhoto((p) => (p - 1 + product.images.length) % product.images.length);
+  const nextPhoto = () => setActivePhoto((p) => (p + 1) % product.images.length);
 
   return (
     <article
-      className="glass rounded-3xl overflow-hidden card-enter glass-hover"
+      className="glass rounded-3xl overflow-hidden card-enter"
       style={{ animationDelay: `${index * 0.08}s`, opacity: 0 }}
     >
-      {/* Image */}
-      <div className="relative overflow-hidden h-60">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+      {/* ── GALLERY ── */}
+      <div className="relative overflow-hidden h-64 group">
+        {/* Photos */}
+        <div
+          className="flex h-full transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(-${activePhoto * 100}%)`, width: `${product.images.length * 100}%` }}
+        >
+          {product.images.map((src, i) => (
+            <div key={i} className="h-full flex-shrink-0" style={{ width: `${100 / product.images.length}%` }}>
+              <img src={src} alt={`${product.name} фото ${i + 1}`} className="w-full h-full object-cover" />
+            </div>
+          ))}
+        </div>
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
+
+        {/* Prev / Next arrows */}
+        {product.images.length > 1 && (
+          <>
+            <button
+              onClick={prevPhoto}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full glass flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Icon name="ChevronLeft" size={16} className="text-white" />
+            </button>
+            <button
+              onClick={nextPhoto}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full glass flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Icon name="ChevronRight" size={16} className="text-white" />
+            </button>
+          </>
+        )}
 
         {/* Badge */}
         {product.badge && (
@@ -47,46 +75,106 @@ export default function ProductCard({ product, index }: Props) {
           </span>
         )}
 
-        {/* Save button */}
+        {/* Save */}
         <button
           onClick={() => setSaved(!saved)}
-          className={`absolute top-3 right-3 w-9 h-9 rounded-full glass flex items-center justify-center transition-all ${
-            saved ? "text-pink-400" : "text-white/70"
-          }`}
+          className="absolute top-3 right-3 w-9 h-9 rounded-full glass flex items-center justify-center transition-all"
         >
-          <Icon name={saved ? "Heart" : "Heart"} size={16} className={saved ? "fill-pink-400" : ""} />
+          <Icon name="Heart" size={16} className={saved ? "fill-pink-400 text-pink-400" : "text-white/70"} />
         </button>
 
-        {/* Price on image */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-          <div>
-            <p className="text-white font-bold text-xl leading-none">{product.price}</p>
-            {product.oldPrice && (
-              <p className="text-white/50 text-sm line-through">{product.oldPrice}</p>
-            )}
+        {/* Dot indicators */}
+        {product.images.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {product.images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActivePhoto(i)}
+                className={`transition-all rounded-full ${
+                  i === activePhoto ? "w-5 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/40"
+                }`}
+              />
+            ))}
           </div>
-          <button className="bg-gradient-to-r from-violet-500 to-pink-500 text-white text-sm font-semibold px-4 py-2 rounded-2xl hover:opacity-90 transition-opacity">
-            Купить
-          </button>
-        </div>
+        )}
       </div>
 
-      {/* Info */}
-      <div className="p-4">
-        {/* Seller */}
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-[10px] font-bold text-white">
+      {/* Thumbnail strip */}
+      {product.images.length > 1 && (
+        <div className="flex gap-2 px-4 pt-3">
+          {product.images.map((src, i) => (
+            <button
+              key={i}
+              onClick={() => setActivePhoto(i)}
+              className={`w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 transition-all ${
+                i === activePhoto ? "ring-2 ring-violet-500 ring-offset-1 ring-offset-background" : "opacity-50 hover:opacity-80"
+              }`}
+            >
+              <img src={src} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── INFO BLOCK ── */}
+      <div className="p-4 pt-3 space-y-3">
+
+        {/* Seller row */}
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
             {product.sellerAvatar}
           </div>
           <span className="text-xs text-muted-foreground">{product.seller}</span>
           <span className="text-muted-foreground/40 text-xs ml-auto">{product.time}</span>
         </div>
 
-        <h3 className="font-semibold text-foreground text-base mb-3 leading-tight">{product.name}</h3>
+        {/* Name */}
+        <h3 className="font-bold text-foreground text-base leading-tight">{product.name}</h3>
 
-        {/* Reactions row */}
+        {/* Description */}
+        <div>
+          <p className={`text-sm text-muted-foreground leading-relaxed ${!expanded ? "line-clamp-2" : ""}`}>
+            {product.description}
+          </p>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs text-violet-400 font-semibold mt-1"
+          >
+            {expanded ? "Свернуть" : "Читать далее"}
+          </button>
+        </div>
+
+        {/* Specs (shown when expanded) */}
+        {expanded && (
+          <div className="grid grid-cols-2 gap-1.5">
+            {product.specs.map((spec, i) => (
+              <div key={i} className="bg-white/5 rounded-xl px-3 py-2 text-xs text-muted-foreground">
+                {spec}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Separator */}
+        <div className="border-t border-white/5" />
+
+        {/* Price + Buy */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-display font-black text-2xl bg-gradient-to-r from-violet-400 to-pink-400 bg-clip-text text-transparent leading-none">
+              {product.price}
+            </p>
+            {product.oldPrice && (
+              <p className="text-muted-foreground text-xs line-through mt-0.5">{product.oldPrice}</p>
+            )}
+          </div>
+          <button className="bg-gradient-to-r from-violet-500 to-pink-500 text-white text-sm font-semibold px-5 py-2.5 rounded-2xl hover:opacity-90 transition-opacity shadow-lg shadow-violet-500/20">
+            В корзину
+          </button>
+        </div>
+
+        {/* Reactions */}
         <div className="flex items-center gap-2">
-          {/* Active reactions display */}
           <div className="flex items-center gap-1 flex-1">
             {reactions.filter(r => r.count > 0).slice(0, 3).map((r, i) => (
               <button
