@@ -46,13 +46,27 @@ export default function ProductCard({ product, index }: Props) {
   const prevPhoto = () => setActivePhoto((p) => (p - 1 + product.images.length) % product.images.length);
   const nextPhoto = () => setActivePhoto((p) => (p + 1) % product.images.length);
 
+  const makeSwipeHandlers = (onLeft: () => void, onRight: () => void) => {
+    let startX = 0;
+    return {
+      onTouchStart: (e: React.TouchEvent) => { startX = e.touches[0].clientX; },
+      onTouchEnd: (e: React.TouchEvent) => {
+        const diff = startX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 40) { if (diff > 0) onLeft(); else onRight(); }
+      },
+    };
+  };
+
+  const gallerySwipe = makeSwipeHandlers(nextPhoto, prevPhoto);
+  const lbSwipe = makeSwipeHandlers(lbNext, lbPrev);
+
   return (
     <article
       className="glass rounded-3xl overflow-hidden card-enter"
       style={{ animationDelay: `${index * 0.08}s`, opacity: 0 }}
     >
       {/* ── GALLERY ── */}
-      <div className="relative overflow-hidden h-64 group">
+      <div className="relative overflow-hidden h-64 group" {...gallerySwipe}>
         {/* Photos */}
         <div
           className="flex h-full transition-transform duration-500 ease-out"
@@ -131,6 +145,7 @@ export default function ProductCard({ product, index }: Props) {
           className="fixed inset-0 z-50 flex items-center justify-center"
           style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(16px)" }}
           onClick={closeLightbox}
+          {...lbSwipe}
         >
           {/* Close */}
           <button
